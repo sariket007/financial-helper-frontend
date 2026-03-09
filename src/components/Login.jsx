@@ -1,7 +1,9 @@
 import { useState } from "react";
 import authService from "../services/authService"; // Importing your strict OOP class
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
+  const navigate = useNavigate();
   // State Management (The Inputs)
   const [formData, setFormData] = useState({
     email: "",
@@ -31,8 +33,8 @@ const Login = () => {
       await authService.login({ email, password });
 
       // Temporary success action until we build the React Router
-      alert("Login Successful! Token saved to localStorage.");
-
+      //alert("Login Successful! Token saved to localStorage.");
+      navigate("/dashboard");
       // Clear form on success
       setFormData({ email: "", password: "" });
     } catch (err) {

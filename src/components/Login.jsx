@@ -1,9 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from 'react'; // 1. Add useEffect here
 import authService from "../services/authService"; // Importing your strict OOP class
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
+  // 2. Add this Reverse Protected Route block
+    useEffect(() => {
+        const currentUser = authService.getCurrentUser();
+        if (currentUser) {
+            navigate('/dashboard'); // Bounce them away from the login page
+        }
+    }, [navigate]);
   // State Management (The Inputs)
   const [formData, setFormData] = useState({
     email: "",

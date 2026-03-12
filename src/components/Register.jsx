@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import authService from "../services/authService"; // The strict OOP Singleton
 
 const Register = () => {
   const navigate = useNavigate();
-
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
   // State Management (Inputs)
   const [formData, setFormData] = useState({
     name: "",

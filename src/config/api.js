@@ -7,6 +7,7 @@ export const ENDPOINTS = {
   AUTH: {
     REGISTER: `${API_BASE_URL}/auth/register`,
     LOGIN: `${API_BASE_URL}/auth/login`,
+    LOGOUT: `${API_BASE_URL}/auth/logout`,
   },
   AGENT: {
     ADVICE: (userId) => `${API_BASE_URL}/advice/${userId}`,

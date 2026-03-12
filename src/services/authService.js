@@ -11,8 +11,12 @@ class AuthService {
   }
 
   // Private helper to encapsulate localStorage manipulation
+  // After backend switched to HttpOnly cookies we no longer get a token in
+  // the response body.  The API now returns a *sanitized* user object
+  // (name, email, etc) solely for UI purposes, so we simply persist that
+  // object.  The cookie itself is managed by the browser automatically.
   #setSession(userData) {
-    if (userData && userData.token) {
+    if (userData) {
       localStorage.setItem("user", JSON.stringify(userData));
     }
   }
@@ -23,12 +27,14 @@ class AuthService {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",                // critical for cookies
       body: JSON.stringify(userData),
     });
 
     const data = await this.#handleResponse(response);
 
     if (data.success) {
+      // data.data is a sanitized user object, no token present
       this.#setSession(data.data);
     }
 
@@ -41,6 +47,7 @@ class AuthService {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify(userData),
     });
 
@@ -53,7 +60,21 @@ class AuthService {
     return data.data;
   }
 
-  logout() {
+  async logout() {
+    // Tell the server to destroy the session cookie.
+    // NOTE: using a hard‑coded URL for now; the config file can be updated
+    // if the base URL changes.  `credentials: 'include'` is essential so
+    // the cookie is sent along with the request.
+    try {
+      await fetch(`${ENDPOINTS.AUTH.LOGOUT}`, {
+        method: "GET",
+        credentials: "include",
+      });
+    } catch (err) {
+      // even if the network call fails we still clear local state
+      console.warn("Logout request failed", err);
+    }
+
     localStorage.removeItem("user");
   }
 

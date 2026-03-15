@@ -1,105 +1,97 @@
-import { useState, useEffect } from 'react'; // 1. Add useEffect here
-import authService from "../services/authService"; // Importing your strict OOP class
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import authService from "../services/authService";
 
 const Login = () => {
-  const navigate = useNavigate();
-  // 2. Add this Reverse Protected Route block
-    useEffect(() => {
-        const currentUser = authService.getCurrentUser();
-        if (currentUser) {
-            navigate('/dashboard'); // Bounce them away from the login page
-        }
-    }, [navigate]);
-  // State Management (The Inputs)
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  // Destructure for cleaner JSX
-  const { email, password } = formData;
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      if (currentUser.role === "admin" || currentUser.role === "superadmin") {
+        navigate("/fintech-admin");
+      } else {
+        navigate("/dashboard");
+      }
+    }
+  }, [navigate]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  // The Output/Behavior
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      // Delegating to the Service layer
-      await authService.login({ email, password });
+      await authService.login(email, password);
+      const user = authService.getCurrentUser();
 
-      // Temporary success action until we build the React Router
-      //alert("Login Successful! Token saved to localStorage.");
-      navigate("/dashboard");
-      // Clear form on success
-      setFormData({ email: "", password: "" });
+      if (user && (user.role === "admin" || user.role === "superadmin")) {
+        navigate("/fintech-admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
-      // Catching the exact error thrown by your OOP class
-      setError(err.message);
+      setError(
+        err.response?.data?.error || "Invalid credentials. Please try again.",
+      );
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6 col-lg-4">
-          <div className="card shadow-sm">
-            <div className="card-body p-4">
-              <h2 className="text-center mb-4">Welcome Back</h2>
+    <div className="row justify-content-center mt-5">
+      <div className="col-12 col-md-6 col-lg-5">
+        <div className="card shadow-sm border-0">
+          <div className="card-body p-5">
+            <h2 className="text-center fw-bold mb-4 text-primary">
+              Welcome Back
+            </h2>
+            {error && (
+              <div className="alert alert-danger p-2 text-center">{error}</div>
+            )}
 
-              {/* Error Display */}
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
-                </div>
-              )}
+            <form onSubmit={handleLogin}>
+              <div className="mb-3">
+                <label className="form-label fw-bold">Email address</label>
+                <input
+                  type="email"
+                  className="form-control form-control-lg"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
 
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">
-                    Email address
-                  </label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    name="email"
-                    value={email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="form-label fw-semibold">Password</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    name="password"
-                    value={password}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="btn btn-primary w-100 fw-bold"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Logging in..." : "Log In"}
-                </button>
-              </form>
+              <div className="mb-4">
+                <label className="form-label fw-bold">Password</label>
+                <input
+                  type="password"
+                  className="form-control form-control-lg"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary w-100 btn-lg fw-bold mb-3"
+                disabled={loading}
+              >
+                {loading ? "Authenticating..." : "Log In"}
+              </button>
+            </form>
+
+            <div className="text-center mt-3">
+              <span className="text-muted">Don't have an account? </span>
+              <Link to="/register" className="text-decoration-none fw-bold">
+                Register here
+              </Link>
             </div>
           </div>
         </div>

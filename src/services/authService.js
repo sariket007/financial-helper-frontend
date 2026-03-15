@@ -1,88 +1,70 @@
-import { ENDPOINTS } from "../config/api";
+import axios from "axios";
+
+const API_URL = "http://localhost:5000/api/auth/";
 
 class AuthService {
-  // Private helper method to handle duplicate response logic (Abstraction)
-  async #handleResponse(response) {
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "API request failed");
+  // ==========================================
+  // 1. LOGIN
+  // ==========================================
+  async login(email, password) {
+    // THE FIX: { email, password } guarantees Axios sends a properly formatted JSON payload
+    const response = await axios.post(
+      API_URL + "login",
+      {
+        email,
+        password,
+      },
+      {
+        withCredentials: true, // Mandatory: Tells the browser to accept the backend's HttpOnly cookie
+      },
+    );
+
+    // If successful, the backend sends the user object (including the new 'role' field)
+    if (response.data.data) {
+      localStorage.setItem("user", JSON.stringify(response.data.data));
     }
-    return data;
+
+    return response.data.data;
   }
 
-  // Private helper to encapsulate localStorage manipulation
-  // After backend switched to HttpOnly cookies we no longer get a token in
-  // the response body.  The API now returns a *sanitized* user object
-  // (name, email, etc) solely for UI purposes, so we simply persist that
-  // object.  The cookie itself is managed by the browser automatically.
-  #setSession(userData) {
-    if (userData) {
-      localStorage.setItem("user", JSON.stringify(userData));
-    }
-  }
-
+  // ==========================================
+  // 2. REGISTER
+  // ==========================================
+  // FIX: Change (name, email, password) to just (userData)
   async register(userData) {
-    const response = await fetch(ENDPOINTS.AUTH.REGISTER, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",                // critical for cookies
-      body: JSON.stringify(userData),
+    // FIX: Pass userData directly to axios, do not wrap it in { }
+    const response = await axios.post(API_URL + "register", userData, {
+      withCredentials: true,
     });
 
-    const data = await this.#handleResponse(response);
-
-    if (data.success) {
-      // data.data is a sanitized user object, no token present
-      this.#setSession(data.data);
+    if (response.data.data) {
+      localStorage.setItem("user", JSON.stringify(response.data.data));
     }
 
-    return data.data;
+    return response.data.data;
   }
 
-  async login(userData) {
-    const response = await fetch(ENDPOINTS.AUTH.LOGIN, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(userData),
-    });
-
-    const data = await this.#handleResponse(response);
-
-    if (data.success) {
-      this.#setSession(data.data);
-    }
-
-    return data.data;
-  }
-
+  // ==========================================
+  // 3. LOGOUT
+  // ==========================================
   async logout() {
-    // Tell the server to destroy the session cookie.
-    // NOTE: using a hard‑coded URL for now; the config file can be updated
-    // if the base URL changes.  `credentials: 'include'` is essential so
-    // the cookie is sent along with the request.
-    try {
-      await fetch(`${ENDPOINTS.AUTH.LOGOUT}`, {
-        method: "GET",
-        credentials: "include",
-      });
-    } catch (err) {
-      // even if the network call fails we still clear local state
-      console.warn("Logout request failed", err);
-    }
+    // We hit the backend logout route so it can destroy the HttpOnly cookie
+    await axios.get(API_URL + "logout", {
+      withCredentials: true,
+    });
 
+    // Then we wipe the local UI state
     localStorage.removeItem("user");
   }
 
-  // Utility method for React to easily check if someone is logged in
+  // ==========================================
+  // 4. GET CURRENT USER (Synchronous UI Check)
+  // ==========================================
   getCurrentUser() {
+    // Reads the user string from storage and parses it back into a JavaScript object
     return JSON.parse(localStorage.getItem("user"));
   }
 }
 
-// Export a single instance (Singleton) to ensure memory efficiency across the app
+// Export a single instance of the class (Singleton Pattern)
 export default new AuthService();

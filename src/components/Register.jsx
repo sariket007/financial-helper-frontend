@@ -1,64 +1,78 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import authService from "../services/authService"; // The strict OOP Singleton
+import authService from "../services/authService";
 
 const Register = () => {
   const navigate = useNavigate();
+
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
-      navigate("/dashboard");
+      if (currentUser.role === "admin" || currentUser.role === "superadmin") {
+        navigate("/fintech-admin");
+      } else {
+        navigate("/dashboard");
+      }
     }
   }, [navigate]);
-  // State Management (Inputs)
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
+    role: "customer", // New role field for testing
     annualIncome: "",
-    riskTolerance: "Medium", // Defaulting to your schema's enum
+    riskTolerance: "Medium",
     primaryGoal: "",
   });
+
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Destructure for cleaner JSX
-  const { name, email, password, annualIncome, riskTolerance, primaryGoal } =
-    formData;
+  const {
+    name,
+    email,
+    password,
+    role,
+    annualIncome,
+    riskTolerance,
+    primaryGoal,
+  } = formData;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // The Output/Behavior
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Architecting the exact nested payload your Node.js backend expects
+    // Architecting the exact nested payload
     const payload = {
       name,
       email,
       password,
+      role, // Pass the role to the backend
       financialProfile: {
-        annualIncome: Number(annualIncome), // Ensure it passes as a number
+        annualIncome: Number(annualIncome),
         riskTolerance,
         primaryGoal,
       },
     };
 
     try {
-      // Delegating entirely to the Service layer
       await authService.register(payload);
+      const user = authService.getCurrentUser();
 
-      // On success, snap the user straight to the secure dashboard
-      navigate("/dashboard");
+      // The Traffic Cop
+      if (user && (user.role === "admin" || user.role === "superadmin")) {
+        navigate("/fintech-admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.error || err.message);
     } finally {
       setIsLoading(false);
     }
@@ -71,18 +85,13 @@ const Register = () => {
           <div className="card shadow-sm border-0">
             <div className="card-body p-5">
               <h2 className="text-center mb-4 fw-bold">Create Your Account</h2>
-
-              {/* Error Display */}
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  {error}
-                </div>
-              )}
+              {error && <div className="alert alert-danger">{error}</div>}
 
               <form onSubmit={handleSubmit}>
                 <h5 className="mb-3 text-muted border-bottom pb-2">
                   Account Details
                 </h5>
+
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Full Name</label>
                   <input
@@ -94,6 +103,7 @@ const Register = () => {
                     required
                   />
                 </div>
+
                 <div className="mb-3">
                   <label className="form-label fw-semibold">
                     Email address
@@ -107,7 +117,8 @@ const Register = () => {
                     required
                   />
                 </div>
-                <div className="mb-4">
+
+                <div className="mb-3">
                   <label className="form-label fw-semibold">Password</label>
                   <input
                     type="password"
@@ -120,12 +131,30 @@ const Register = () => {
                   />
                 </div>
 
+                {/* NEW ROLE SELECTOR FOR TESTING */}
+                <div className="mb-4">
+                  <label className="form-label fw-semibold text-primary">
+                    Account Role (Dev Only)
+                  </label>
+                  <select
+                    className="form-select border-primary"
+                    name="role"
+                    value={role}
+                    onChange={handleChange}
+                  >
+                    <option value="customer">Standard Customer</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Superadmin</option>
+                  </select>
+                </div>
+
                 <h5 className="mb-3 text-muted border-bottom pb-2 mt-4">
                   Financial Profile
                 </h5>
+
                 <div className="mb-3">
                   <label className="form-label fw-semibold">
-                    Annual Income (₹)
+                    Annual Income ($)
                   </label>
                   <input
                     type="number"
@@ -136,6 +165,7 @@ const Register = () => {
                     required
                   />
                 </div>
+
                 <div className="mb-3">
                   <label className="form-label fw-semibold">
                     Risk Tolerance
@@ -151,6 +181,7 @@ const Register = () => {
                     <option value="High">High</option>
                   </select>
                 </div>
+
                 <div className="mb-4">
                   <label className="form-label fw-semibold">
                     Primary Financial Goal
@@ -161,7 +192,7 @@ const Register = () => {
                     name="primaryGoal"
                     value={primaryGoal}
                     onChange={handleChange}
-                    placeholder="e.g., Buying a house, Retirement"
+                    placeholder="e.g., Buying a house"
                     required
                   />
                 </div>

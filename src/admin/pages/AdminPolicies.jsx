@@ -6,15 +6,12 @@ const AdminPolicies = () => {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  // Add this under your other useState declarations
+  const [editingPolicy, setEditingPolicy] = useState(null);
   // 1. Fetch all policies from the database
   const fetchPolicies = async () => {
     try {
       setLoading(true);
-      console.log(
-        "Fetching policies from:",
-        `${import.meta.env.VITE_API_BASE_URL}/policies`,
-      );
       //console.log(`${import.meta.env.VITE_API_BASE_URL}/policies`);
       //const currentUser = authService.getCurrentUser();
       const response = await axios.get(
@@ -44,22 +41,29 @@ const AdminPolicies = () => {
   }, []);
 
   // 2. Delete a policy
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this policy?")) return;
-
+  const handleHardDelete = async (id) => {
+    if (
+      !window.confirm(
+        "WARNING: This will permanently delete the policy. Are you sure?",
+      )
+    )
+      return;
     try {
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/policies/${id}`, {
-        withCredentials: true, // Admin routes must be protected!
-      });
-      // Refresh the table immediately after deleting
-      fetchPolicies();
+      await axios.delete(
+        `${import.meta.env.VITE_API_BASE_URL}/policies/${id}`,
+        {
+          withCredentials: true,
+        },
+      );
+      fetchPolicies(); // Refresh the table
+      // If they delete the policy they are currently editing, clear the form
+      if (editingPolicy?._id === id) setEditingPolicy(null);
     } catch (err) {
-      alert("Failed to delete policy.");
+      alert("Failed to delete policy");
     }
   };
-  {
-    /* Add the toggle function inside AdminPolicies component */
-  }
+
+  // Add the toggle function inside AdminPolicies component 
   const handleToggleStatus = async (id) => {
     try {
       await axios.patch(
@@ -75,43 +79,6 @@ const AdminPolicies = () => {
     }
   };
 
-  {
-    /* Down in your return() statement inside the <tbody>... */
-  }
-
-  {
-    policies.map((policy) => (
-      <tr key={policy._id}>
-        <td className="px-4 fw-semibold">{policy.name}</td>
-        <td>${policy.price}</td>
-
-        {/* NEW STATUS BADGE */}
-        <td>
-          <span
-            className={`badge ${policy.isActive !== false ? "bg-success" : "bg-secondary"}`}
-          >
-            {policy.isActive !== false ? "Active" : "Inactive"}
-          </span>
-        </td>
-
-        <td>
-          <span className="badge bg-light text-dark border">
-            {policy.features?.length || 0} features
-          </span>
-        </td>
-
-        <td className="px-4 text-end">
-          {/* SAFE TOGGLE BUTTON INSTEAD OF DELETE */}
-          <button
-            onClick={() => handleToggleStatus(policy._id)}
-            className={`btn btn-sm fw-bold ${policy.isActive !== false ? "btn-outline-warning" : "btn-outline-success"}`}
-          >
-            {policy.isActive !== false ? "Deactivate" : "Activate"}
-          </button>
-        </td>
-      </tr>
-    ));
-  }
   return (
     <div className="container-fluid py-4">
       <div className="row mb-4">
@@ -124,10 +91,13 @@ const AdminPolicies = () => {
       </div>
 
       <div className="row">
-        {/* LEFT COLUMN: THE FORM */}
+        {/* LEFT COLUMN: Update the Form Component */}
         <div className="col-lg-5 mb-4">
-          {/* We pass fetchPolicies as a prop so the form can trigger a table refresh! */}
-          <PolicyForm onPolicyCreated={fetchPolicies} />
+          <PolicyForm
+            onPolicyCreated={fetchPolicies}
+            editingPolicy={editingPolicy}
+            clearEdit={() => setEditingPolicy(null)}
+          />
         </div>
 
         {/* RIGHT COLUMN: THE DATA TABLE */}
@@ -161,7 +131,8 @@ const AdminPolicies = () => {
                         <th className="px-4 py-3">Name</th>
                         <th className="py-3">Price</th>
                         <th className="py-3">Features</th>
-                        <th className="py-3 text-end">Status</th>
+                        <th className="py-2">Status</th>
+                        <th className="py-3 text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -174,15 +145,32 @@ const AdminPolicies = () => {
                               {policy.features?.length || 0} features
                             </span>
                           </td>
+                          <td>{policy.isActive ? "Active" : "Inactive"}</td>
                           <td className="px-4 text-end">
-                            {/* SAFE TOGGLE BUTTON INSTEAD OF DELETE */}
+                            {/* Edit Button */}
+                            <button
+                              onClick={() => setEditingPolicy(policy)}
+                              className="btn btn-sm btn-outline-primary fw-bold me-2"
+                            >
+                              Edit
+                            </button>
+
+                            {/* Existing Toggle Button */}
                             <button
                               onClick={() => handleToggleStatus(policy._id)}
-                              className={`btn btn-sm fw-bold ${policy.isActive !== false ? "btn-outline-warning" : "btn-outline-success"}`}
+                              className={`btn btn-sm fw-bold me-2 ${policy.isActive !== false ? "btn-outline-warning" : "btn-outline-success"}`}
                             >
                               {policy.isActive !== false
                                 ? "Deactivate"
                                 : "Activate"}
+                            </button>
+
+                            {/* Hard Delete Button */}
+                            <button
+                              onClick={() => handleHardDelete(policy._id)}
+                              className="btn btn-sm btn-outline-danger fw-bold"
+                            >
+                              <i className="bi bi-trash"></i> Delete
                             </button>
                           </td>
                         </tr>

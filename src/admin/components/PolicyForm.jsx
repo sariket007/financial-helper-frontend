@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,7 +16,7 @@ const policySchema = z.object({
     .min(1, "You must add at least one feature"),
 });
 
-const PolicyForm = ({ onPolicyCreated }) => {
+const PolicyForm = ({ onPolicyCreated, editingPolicy, clearEdit }) => {
   const [serverError, setServerError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -33,8 +33,8 @@ const PolicyForm = ({ onPolicyCreated }) => {
       name: "",
       price: "",
       description: "",
-      features: [{ value: "" }], 
-      isActive: true // Start with one empty feature box
+      features: [{ value: "" }],
+      isActive: true, // Start with one empty feature box
     },
   });
 
@@ -45,31 +45,69 @@ const PolicyForm = ({ onPolicyCreated }) => {
     name: "features",
   });
 
+  // Watch for the user clicking "Edit" on the table
+  useEffect(() => {
+    if (editingPolicy) {
+      // We must transform the MongoDB array ["A", "B"] back into the
+      // array of objects [{value: "A"}, {value: "B"}] that useFieldArray requires!
+      const formattedFeatures = editingPolicy.features.map((f) => ({
+        value: f,
+      }));
+
+      // reset() instantly fills all the inputs
+      reset({
+        name: editingPolicy.name,
+        price: editingPolicy.price,
+        description: editingPolicy.description,
+        features: formattedFeatures,
+      });
+    } else {
+      // If we clear the edit, wipe the form back to default
+      reset({
+        name: "",
+        price: "",
+        description: "",
+        features: [{ value: "" }],
+      });
+    }
+  }, [editingPolicy, reset]);
   // 4. THE SUBMIT HANDLER
   // This ONLY runs if Zod approves the data perfectly. No manual IF statements needed!
   const onSubmit = async (data) => {
     setServerError("");
     setSuccessMsg("");
 
-    // Transform the features array from [{value: "A"}, {value: "B"}] back to ["A", "B"] for the backend
     const formattedPayload = {
       ...data,
       features: data.features.map((f) => f.value),
     };
 
     try {
-      await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/policies`,
-        formattedPayload,
-        {
-          withCredentials: true,
-        },
-      );
+      if (editingPolicy) {
+        // UPDATE MODE (PATCH)
+        await axios.patch(
+          `${import.meta.env.VITE_API_BASE_URL}/policies/${editingPolicy._id}`,
+          formattedPayload,
+          {
+            withCredentials: true,
+          },
+        );
+        setSuccessMsg("Policy updated successfully!");
+        clearEdit(); // Wipe form and exit edit mode
+      } else {
+        // CREATE MODE (POST)
+        await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/policies`,
+          formattedPayload,
+          {
+            withCredentials: true,
+          },
+        );
+        setSuccessMsg("Policy published successfully!");
+        reset();
+      }
 
-      setSuccessMsg("Policy published successfully!");
-      reset(); // Instantly wipes the form clean
-
-      if (onPolicyCreated) onPolicyCreated();
+      if (onPolicyCreated) onPolicyCreated(); // Refreshes the table
     } catch (err) {
       setServerError(
         err.response?.data?.error || "Failed to connect to server",

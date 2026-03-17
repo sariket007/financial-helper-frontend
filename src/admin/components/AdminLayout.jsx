@@ -60,12 +60,13 @@ const AdminLayout = () => {
               Pages
             </Link>
           </li>
+          {/* Add this near your Dashboard link */}
           <li className="nav-item">
             <Link
               to="/fintech-admin/policies"
-              className={`nav-link ${isActive("/fintech-admin/policies")}`}
+              className={`nav-link ${location.pathname === "/fintech-admin/policies" ? "bg-primary text-white" : "text-light"}`}
             >
-              Policies
+              Policy Management
             </Link>
           </li>
           <li className="nav-item">

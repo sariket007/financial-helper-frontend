@@ -15,6 +15,7 @@ import Home from "./pages/Home";
 import Policy from "./components/Policy";
 import AdminLayout from "./admin/components/AdminLayout";
 import AdminDashboard from "./admin/pages/AdminDashboard";
+import AdminPolicies from "./admin/pages/AdminPolicies";
 
 const Navigation = () => {
   const location = useLocation();
@@ -174,6 +175,7 @@ function App() {
         <Route path="/fintech-admin" element={<AdminLayout />}>
           {/* Default view when hitting /fintech-admin */}
           <Route index element={<AdminDashboard />} />
+          <Route path="/fintech-admin/policies" element={<AdminPolicies />} />
 
           {/* We will build these next! */}
           {/* <Route path="pages" element={<AdminPages />} /> */}

@@ -16,7 +16,11 @@ import Policy from "./components/Policy";
 import AdminLayout from "./admin/components/AdminLayout";
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminPolicies from "./admin/pages/AdminPolicies";
+import AdminPages from "./admin/pages/AdminPages"; // NEW: Admin page management
+import SinglePage from "./pages/SinglePage"; // Or wherever you saved it
 
+// ... inside your <Routes> block:
+<Route path="/p/:slug" element={<SinglePage />} />;
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,35 +46,51 @@ const Navigation = () => {
           </Link>
 
           <div className="d-flex align-items-center gap-3">
-            {user ? (
-              <>
-                {/* Temporary Admin Link for testing - eventually we hide this if role !== admin */}
-                <Link
-                  to="/dashboard"
-                  className="text-light text-decoration-none fw-semibold"
-                >
-                  Welcome, {user.name}
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="btn btn-outline-danger btn-sm fw-bold"
-                >
-                  Log Out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="btn btn-outline-light btn-sm fw-bold"
-                >
-                  Log In
-                </Link>
-                <Link to="/register" className="btn btn-primary btn-sm fw-bold">
-                  Register
-                </Link>
-              </>
-            )}
+            <div className="user-menu">
+              {user ? (
+                // USER IS LOGGED IN
+                <div className="d-flex align-items-center gap-3">
+                  <span className="text-muted">Welcome, {user.name}</span>
+
+                  {/* THE MAGIC: Check the role and render the correct link */}
+                  {user.role === "admin" || user.role === "superadmin" ? (
+                    <Link
+                      to="/fintech-admin"
+                      className="btn btn-sm btn-primary fw-bold"
+                    >
+                      Admin Panel
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/dashboard"
+                      className="btn btn-sm btn-outline-primary"
+                    >
+                      My Dashboard
+                    </Link>
+                  )}
+
+                  <button
+                    onClick={handleLogout}
+                    className="btn btn-sm btn-danger"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                // USER IS NOT LOGGED IN
+                <div className="d-flex gap-2">
+                  <Link
+                    to="/login"
+                    className="btn btn-sm btn-outline-secondary"
+                  >
+                    Login
+                  </Link>
+                  <Link to="/register" className="btn btn-sm btn-primary">
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -168,6 +188,7 @@ function App() {
             </>
           }
         />
+        <Route path="/page/:slug" element={<SinglePage />} />
 
         {/* ========================================== */}
         {/* ADMIN PORTAL ROUTES (Isolated Layout)      */}
@@ -176,9 +197,9 @@ function App() {
           {/* Default view when hitting /fintech-admin */}
           <Route index element={<AdminDashboard />} />
           <Route path="/fintech-admin/policies" element={<AdminPolicies />} />
-
+          <Route path="/fintech-admin/pages" element={<AdminPages />} />
           {/* We will build these next! */}
-          {/* <Route path="pages" element={<AdminPages />} /> */}
+
           {/* <Route path="policies" element={<AdminPolicies />} /> */}
         </Route>
       </Routes>

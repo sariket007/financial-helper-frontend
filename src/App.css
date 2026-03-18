@@ -40,3 +40,14 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Fixes for React-Quill HTML rendering on the Storefront */
+.page-content {
+  overflow-wrap: break-word; /* Forces long unbroken URLs to wrap */
+  word-wrap: break-word;
+}
+
+.page-content img {
+  max-width: 100%; /* Prevents images from breaking out of the container */
+  height: auto; /* Keeps the image proportions correct */
+}

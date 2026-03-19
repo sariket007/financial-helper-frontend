@@ -19,6 +19,7 @@ import AdminPolicies from "./admin/pages/AdminPolicies";
 import AdminPages from "./admin/pages/AdminPages"; // NEW: Admin page management
 import SinglePage from "./pages/SinglePage"; // Or wherever you saved it
 
+// triggering vercel staging deployment
 // ... inside your <Routes> block:
 <Route path="/p/:slug" element={<SinglePage />} />;
 const Navigation = () => {

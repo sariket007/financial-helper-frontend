@@ -1,35 +1,23 @@
-import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import authService from "../../services/authService";
+import { useAuth } from "../../context/AuthContext"; // Pull directly from Context
 
 const AdminLayout = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    // Security check: If not logged in, or NOT an admin/superadmin, kick them out
-    if (
-      !currentUser ||
-      (currentUser.role !== "admin" && currentUser.role !== "superadmin")
-    ) {
-      navigate("/login");
-    } else {
-      setUser(currentUser);
-    }
-  }, [navigate]);
-
+  // Replace your existing handleLogout in AdminLayout.jsx with this:
   const handleLogout = async () => {
-    await authService.logout();
-    navigate("/login");
+    await logout().finally(() => {
+      // replace: true wipes the forward history so they can't click the browser "Back" button to return!
+      navigate("/login", { replace: true });
+    });
   };
-
-  // Helper function to highlight the active menu item
   const isActive = (path) =>
     location.pathname.includes(path) ? "bg-primary text-white" : "text-light";
 
-  if (!user) return null; // Prevent UI flash before redirect
+  // Safe fallback just in case, but ProtectedRoute should handle this
+  if (!user) return null;
 
   return (
     <div className="d-flex vh-100 bg-light">
@@ -60,21 +48,12 @@ const AdminLayout = () => {
               Pages
             </Link>
           </li>
-          {/* Add this near your Dashboard link */}
           <li className="nav-item">
             <Link
               to="/fintech-admin/policies"
-              className={`nav-link ${location.pathname === "/fintech-admin/policies" ? "bg-primary text-white" : "text-light"}`}
+              className={`nav-link ${isActive("/fintech-admin/policies")}`}
             >
               Policy Management
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link
-              to="/fintech-admin/users"
-              className={`nav-link ${isActive("/fintech-admin/users")}`}
-            >
-              Users
             </Link>
           </li>
         </ul>
@@ -90,7 +69,7 @@ const AdminLayout = () => {
       </div>
 
       {/* === RIGHT MAIN CONTENT AREA === */}
-      <div className="flex-grow-1 overflow-auto">
+      <div className="flex-grow-1 overflow-auto d-flex flex-column">
         {/* The Top Navbar for the Admin Area */}
         <nav className="navbar navbar-light bg-white shadow-sm px-4 py-3 mb-4">
           <div className="container-fluid justify-content-end">
@@ -101,7 +80,7 @@ const AdminLayout = () => {
         </nav>
 
         {/* This <Outlet /> is the magic window where the child pages render */}
-        <div className="container-fluid px-4 pb-5">
+        <div className="container-fluid px-4 pb-5 flex-grow-1">
           <Outlet />
         </div>
       </div>

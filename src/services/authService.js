@@ -37,21 +37,41 @@ class AuthService {
   }
 
   // ==========================================
-  // 3. LOGOUT
+  // 3. LOGOUT (Bulletproofed)
   // ==========================================
   async logout() {
-    // FIX: Swapped to privateApi
-    await privateApi.get("/auth/logout");
-
-    // Wipe the local UI state
-    localStorage.removeItem("user");
+    try {
+      // Attempt to tell the server to clear the HttpOnly cookie
+      await privateApi.get("/auth/logout");
+    } catch (error) {
+      console.warn(
+        "Server logout failed or token already dead. Forcing local logout.",
+      );
+    } finally {
+      // FINALLY BLOCK: This runs 100% of the time, even if the server crashes.
+      // It guarantees the local storage is wiped.
+      localStorage.removeItem("user");
+    }
   }
 
   // ==========================================
-  // 4. GET CURRENT USER (Synchronous UI Check)
+  // 4. GET CURRENT USER (Strict Sanitization)
   // ==========================================
   getCurrentUser() {
-    return JSON.parse(localStorage.getItem("user"));
+    try {
+      const userStr = localStorage.getItem("user");
+      // If storage is truly empty, or holds garbage string values, return strictly null
+      if (!userStr || userStr === "undefined" || userStr === "null") {
+        return null;
+      }
+      return JSON.parse(userStr);
+    } catch (error) {
+      console.error(
+        "Failed to parse user from storage, wiping corrupted data.",
+      );
+      localStorage.removeItem("user");
+      return null;
+    }
   }
 }
 

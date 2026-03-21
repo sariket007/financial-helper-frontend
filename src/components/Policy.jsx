@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { publicApi } from "axios";
+import { publicApi } from "../api/axiosInstance";
 
 const Policy = () => {
   const [policies, setPolicies] = useState([]);

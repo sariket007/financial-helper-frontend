@@ -1,21 +1,20 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import authService from "../services/authService";
+import { useState } from "react";
+import { useNavigate, Link, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // 1. Import Context
 
 const Register = () => {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      if (currentUser.role === "admin" || currentUser.role === "superadmin") {
-        navigate("/fintech-admin");
-      } else {
-        navigate("/dashboard");
-      }
-    }
-  }, [navigate]);
+  // Inside Register.jsx, right above your state declarations:
+  const { register, user } = useAuth(); // (You already have this)
 
+  // ADD THIS REVERSE BOUNCER:
+  if (user) {
+    if (user.role === "admin" || user.role === "superadmin") {
+      return <Navigate to="/fintech-admin" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -48,12 +47,11 @@ const Register = () => {
     setError("");
     setIsLoading(true);
 
-    // Architecting the exact nested payload
     const payload = {
       name,
       email,
       password,
-      role, // Pass the role to the backend
+      role,
       financialProfile: {
         annualIncome: Number(annualIncome),
         riskTolerance,
@@ -62,11 +60,14 @@ const Register = () => {
     };
 
     try {
-      await authService.register(payload);
-      const user = authService.getCurrentUser();
+      // 3. Call the Context register function (Instantly updates global state)
+      const newUser = await register(payload);
 
-      // The Traffic Cop
-      if (user && (user.role === "admin" || user.role === "superadmin")) {
+      // 4. Safely Navigate (The ProtectedRoute will handle the rest)
+      if (
+        newUser &&
+        (newUser.role === "admin" || newUser.role === "superadmin")
+      ) {
         navigate("/fintech-admin");
       } else {
         navigate("/dashboard");

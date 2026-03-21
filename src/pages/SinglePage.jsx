@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import { publicApi } from "../api/axiosInstance";
 import DOMPurify from "dompurify";
 
 const SinglePage = () => {
@@ -16,9 +16,7 @@ const SinglePage = () => {
       try {
         setIsLoading(true);
         // Hit the strictly PUBLIC route we built in the backend
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/pages/public/${slug}`,
-        );
+        const response = await publicApi.get(`/pages/public/${slug}`);
         setPage(response.data.data);
       } catch (err) {
         setError("Page not found or is currently unavailable.");

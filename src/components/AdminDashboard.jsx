@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { privateApi } from "axios";
 import authService from "../services/authService";
 
 const AdminDashboard = () => {
@@ -10,9 +10,7 @@ const AdminDashboard = () => {
 
   const fetchAdminPolicies = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/policies", {
-        withCredentials: true,
-      });
+      const response = await privateApi.get("/policies");
       setPolicies(response.data.data);
     } catch (error) {
       console.error("Admin fetch error:", error);
@@ -35,8 +33,8 @@ const AdminDashboard = () => {
 
   const handleToggle = async (policyId) => {
     try {
-      await axios.patch(
-        `http://localhost:5000/api/policies/${policyId}/toggle`,
+      await privateApi.patch(
+        `/policies/${policyId}/toggle`,
         {},
         {
           withCredentials: true,

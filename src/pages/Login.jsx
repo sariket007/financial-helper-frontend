@@ -36,6 +36,7 @@ const Login = () => {
         navigate("/dashboard");
       }
     } catch (err) {
+      console.error("Login attempt rejected:", err);
       setError("Invalid email or password");
     } finally {
       setIsLoading(false);

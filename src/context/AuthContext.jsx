@@ -43,6 +43,8 @@ export const AuthProvider = ({ children }) => {
     try {
       await authService.logout();
     } catch (error) {
+      // ESLint is happy, and your unit tests can spy on console.error
+      console.error("Backend logout failed:", error);
       console.warn("Backend logout failed, forcing local wipe.");
     } finally {
       // Force wipe both the memory and the brain simultaneously
@@ -58,4 +60,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = () => {
+  return useContext(AuthContext);
+};

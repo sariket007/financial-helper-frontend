@@ -19,6 +19,7 @@ const SinglePage = () => {
         const response = await publicApi.get(`/pages/public/${slug}`);
         setPage(response.data.data);
       } catch (err) {
+        console.error("Failed to fetch page data", err);
         setError("Page not found or is currently unavailable.");
       } finally {
         setIsLoading(false);

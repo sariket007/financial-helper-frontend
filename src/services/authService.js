@@ -46,6 +46,7 @@ class AuthService {
     } catch (error) {
       console.warn(
         "Server logout failed or token already dead. Forcing local logout.",
+        error,
       );
     } finally {
       // FINALLY BLOCK: This runs 100% of the time, even if the server crashes.
@@ -68,6 +69,7 @@ class AuthService {
     } catch (error) {
       console.error(
         "Failed to parse user from storage, wiping corrupted data.",
+        error,
       );
       localStorage.removeItem("user");
       return null;

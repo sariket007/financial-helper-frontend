@@ -59,11 +59,12 @@ const AdminPolicies = () => {
       // If they delete the policy they are currently editing, clear the form
       if (editingPolicy?._id === id) setEditingPolicy(null);
     } catch (err) {
+      console.error("Failed to delete policy", err);
       alert("Failed to delete policy");
     }
   };
 
-  // Add the toggle function inside AdminPolicies component 
+  // Add the toggle function inside AdminPolicies component
   const handleToggleStatus = async (id) => {
     try {
       await axios.patch(
@@ -75,6 +76,7 @@ const AdminPolicies = () => {
       );
       fetchPolicies(); // Refresh table to show new status
     } catch (err) {
+      console.error("Failed to toggle policy status", err);
       alert("Failed to update status");
     }
   };

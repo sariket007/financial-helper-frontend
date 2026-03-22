@@ -46,6 +46,7 @@ const AdminPages = () => {
       fetchPages(); // Refresh the table
       if (editingPage?._id === id) setEditingPage(null); // Clear form if editing the deleted page
     } catch (error) {
+      console.error("Failed to delete page", error);
       alert("Failed to delete page");
     }
   };
@@ -61,6 +62,7 @@ const AdminPages = () => {
       );
       fetchPages(); // Refresh the table
     } catch (error) {
+      console.error("Failed to update page status", error);
       alert("Failed to update status");
     }
   };

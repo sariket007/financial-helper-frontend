@@ -1,0 +1,36 @@
+name: Staging CI Guardrail
+
+# 1. When does this run?
+# Only when someone opens or updates a Pull Request targeting the 'staging' branch.
+on:
+  pull_request:
+    branches: ["staging", "main"]
+
+jobs:
+  build-and-verify:
+    # 2. What kind of computer should GitHub spin up?
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step A: Download the code from the Pull Request
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step B: Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm" # Speeds up future runs by caching dependencies
+
+      # Step C: Install packages (npm ci is stricter than npm install, perfect for servers)
+      - name: Install Dependencies
+        run: npm ci
+
+      # Step D: Run the exact same linter Husky uses
+      - name: Run Strict Linting
+        run: npm run lint
+
+      # Step E: Make sure the app actually compiles for production!
+      - name: Verify Production Build
+        run: npm run build

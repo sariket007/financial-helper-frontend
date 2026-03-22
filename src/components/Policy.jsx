@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { publicApi } from "../api/axiosInstance";
 
 const Policy = () => {
   const [policies, setPolicies] = useState([]);
@@ -8,9 +8,7 @@ const Policy = () => {
   useEffect(() => {
     const fetchPolicies = async () => {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/policies/public`,
-        );
+        const response = await publicApi.get(`/policies/public`);
         setPolicies(response.data.data);
       } catch (error) {
         console.error("Error fetching policies:", error);

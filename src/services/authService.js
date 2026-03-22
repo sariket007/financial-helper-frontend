@@ -1,25 +1,20 @@
-import axios from "axios";
+// Remove standard axios
+// import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/auth/";
+// Import your new custom instance (adjust the path if your folders are different)
+import { privateApi } from "../api/axiosInstance";
 
 class AuthService {
   // ==========================================
   // 1. LOGIN
   // ==========================================
   async login(email, password) {
-    // THE FIX: { email, password } guarantees Axios sends a properly formatted JSON payload
-    const response = await axios.post(
-      API_URL + "login",
-      {
-        email,
-        password,
-      },
-      {
-        withCredentials: true, // Mandatory: Tells the browser to accept the backend's HttpOnly cookie
-      },
-    );
+    // FIX: Using privateApi automatically routes to Render/Localhost AND attaches cookies
+    const response = await privateApi.post("/auth/login", {
+      email,
+      password,
+    });
 
-    // If successful, the backend sends the user object (including the new 'role' field)
     if (response.data.data) {
       localStorage.setItem("user", JSON.stringify(response.data.data));
     }
@@ -30,12 +25,9 @@ class AuthService {
   // ==========================================
   // 2. REGISTER
   // ==========================================
-  // FIX: Change (name, email, password) to just (userData)
   async register(userData) {
-    // FIX: Pass userData directly to axios, do not wrap it in { }
-    const response = await axios.post(API_URL + "register", userData, {
-      withCredentials: true,
-    });
+    // FIX: Cleaned up the call. privateApi handles the heavy lifting.
+    const response = await privateApi.post("/auth/register", userData);
 
     if (response.data.data) {
       localStorage.setItem("user", JSON.stringify(response.data.data));
@@ -45,26 +37,44 @@ class AuthService {
   }
 
   // ==========================================
-  // 3. LOGOUT
+  // 3. LOGOUT (Bulletproofed)
   // ==========================================
   async logout() {
-    // We hit the backend logout route so it can destroy the HttpOnly cookie
-    await axios.get(API_URL + "logout", {
-      withCredentials: true,
-    });
-
-    // Then we wipe the local UI state
-    localStorage.removeItem("user");
+    try {
+      // Attempt to tell the server to clear the HttpOnly cookie
+      await privateApi.get("/auth/logout");
+    } catch (error) {
+      console.warn(
+        "Server logout failed or token already dead. Forcing local logout.",
+        error,
+      );
+    } finally {
+      // FINALLY BLOCK: This runs 100% of the time, even if the server crashes.
+      // It guarantees the local storage is wiped.
+      localStorage.removeItem("user");
+    }
   }
 
   // ==========================================
-  // 4. GET CURRENT USER (Synchronous UI Check)
+  // 4. GET CURRENT USER (Strict Sanitization)
   // ==========================================
   getCurrentUser() {
-    // Reads the user string from storage and parses it back into a JavaScript object
-    return JSON.parse(localStorage.getItem("user"));
+    try {
+      const userStr = localStorage.getItem("user");
+      // If storage is truly empty, or holds garbage string values, return strictly null
+      if (!userStr || userStr === "undefined" || userStr === "null") {
+        return null;
+      }
+      return JSON.parse(userStr);
+    } catch (error) {
+      console.error(
+        "Failed to parse user from storage, wiping corrupted data.",
+        error,
+      );
+      localStorage.removeItem("user");
+      return null;
+    }
   }
 }
 
-// Export a single instance of the class (Singleton Pattern)
 export default new AuthService();

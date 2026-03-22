@@ -1,26 +1,17 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import authService from "../services/authService";
+import { useState } from "react";
+import { useNavigate, Link, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Register = () => {
+  // 1. ALL HOOKS MUST GO FIRST (React Rule of Hooks)
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      if (currentUser.role === "admin" || currentUser.role === "superadmin") {
-        navigate("/fintech-admin");
-      } else {
-        navigate("/dashboard");
-      }
-    }
-  }, [navigate]);
+  const { register, user } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    role: "customer", // New role field for testing
+    role: "customer",
     annualIncome: "",
     riskTolerance: "Medium",
     primaryGoal: "",
@@ -29,6 +20,7 @@ const Register = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // 2. Destructure state
   const {
     name,
     email,
@@ -39,6 +31,7 @@ const Register = () => {
     primaryGoal,
   } = formData;
 
+  // 3. Helper Functions
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -48,12 +41,11 @@ const Register = () => {
     setError("");
     setIsLoading(true);
 
-    // Architecting the exact nested payload
     const payload = {
       name,
       email,
       password,
-      role, // Pass the role to the backend
+      role,
       financialProfile: {
         annualIncome: Number(annualIncome),
         riskTolerance,
@@ -62,22 +54,33 @@ const Register = () => {
     };
 
     try {
-      await authService.register(payload);
-      const user = authService.getCurrentUser();
+      const newUser = await register(payload);
 
-      // The Traffic Cop
-      if (user && (user.role === "admin" || user.role === "superadmin")) {
+      if (
+        newUser &&
+        (newUser.role === "admin" || newUser.role === "superadmin")
+      ) {
         navigate("/fintech-admin");
       } else {
         navigate("/dashboard");
       }
     } catch (err) {
+      // 'err' is actively used here, so ESLint will pass it
       setError(err.response?.data?.error || err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // 4. THE REVERSE BOUNCER MUST GO HERE (After hooks, before final return)
+  if (user) {
+    if (user.role === "admin" || user.role === "superadmin") {
+      return <Navigate to="/fintech-admin" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // 5. Final UI Render
   return (
     <div className="container mt-5 mb-5">
       <div className="row justify-content-center">
@@ -131,7 +134,7 @@ const Register = () => {
                   />
                 </div>
 
-                {/* NEW ROLE SELECTOR FOR TESTING */}
+                {/* ROLE SELECTOR FOR TESTING */}
                 <div className="mb-4">
                   <label className="form-label fw-semibold text-primary">
                     Account Role (Dev Only)
